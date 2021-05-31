@@ -1,0 +1,22 @@
+{
+  "name": "Spine",
+  "manifest_version": 2,
+  "version": "1.0",
+  "permissions": [
+    "cookies",
+    "webRequest",
+    "webRequestBlocking",
+    "*://*.google.com/",
+    "*://localhost/"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["main.js"]
+    }
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  }
+}
