@@ -1,5 +1,5 @@
 $(document).ready(function() {
-  if (!$('#spine_extension')){
+  if ($('#spine_extension').length === 0){
     alert('Cần extension Spine để hoạt động');
   }
 });
