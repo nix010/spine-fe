@@ -20,7 +20,7 @@ $('#btn-load-link').on('click', function(e) {
     let callbackElId = `link-cb-${idx}`;
     resultTable.append(`<tr>
         <td>${idx+1}</td>
-        <td>${link}</td>
+        <td class="link-text">${link}</td>
         <td class="check-status" id="${callbackElId}"></td>
         <td></td>
         <td></td>
