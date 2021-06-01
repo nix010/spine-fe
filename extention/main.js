@@ -29,9 +29,9 @@ function checkIndexList() {
       // document.getElementById(link.callbackElId).innerHTML = `<a target="_blank" href="${isIndex}">Captcha</a>`;
       return;
     }
-    document.getElementById(link.callbackElId).innerText = res.isIndex
-      ? 'Indexed'
-      : 'No';
+    document.getElementById(link.callbackElId).innerHTML = res.isIndex
+      ? '<span class="text-success">Indexed</span>'
+      : '<span class="text-danger">NO</span>';
     linkList.shift();
     checkIndexList();
   });
