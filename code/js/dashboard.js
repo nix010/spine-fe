@@ -18,7 +18,14 @@ $('#btn-load-link').on('click', function(e) {
   resultTable.empty();
   const message = linkTexts.map((link, idx) => {
     let callbackElId = `link-cb-${idx}`;
-    resultTable.append(`<tr><td>${idx+1}</td><td>${link}</td><td class="check-status" id="${callbackElId}"></td></tr>`);
+    resultTable.append(`<tr>
+        <td>${idx+1}</td>
+        <td>${link}</td>
+        <td class="check-status" id="${callbackElId}"></td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>`);
     return { link, callbackElId };
   });
   newLoad = true;
