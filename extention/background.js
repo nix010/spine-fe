@@ -7,12 +7,9 @@ chrome.runtime.onMessage.addListener((mess, sender, sendResponse) => {
     if (this.status === 429) {
       chrome.tabs.create({ url: this.responseURL }, (tab) => {
         captchaTabId = tab.id;
-        console.log('tab open');
         chrome.tabs.onRemoved.addListener(function(tabId) {
-          console.log('tab close');
 
           if (captchaTabId === tabId){
-            console.log('tab resume');
             sendResponse({captchaTabClose: true});
           }
         });
@@ -34,7 +31,7 @@ chrome.runtime.onMessage.addListener((mess, sender, sendResponse) => {
 
 
 const cleanUrl = url => {
-  let firstUrl = url.trim().split('://', 1);
+  let firstUrl = url.trim().split('://', 2);
   firstUrl = firstUrl.length === 2 ? firstUrl[1] : firstUrl[0];
   firstUrl = firstUrl.replace('www.', '');
   firstUrl = firstUrl.replace(/\/+$/, ''); // trim "/"
