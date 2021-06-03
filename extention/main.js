@@ -2,37 +2,61 @@ const tag = document.createElement('meta');
 tag.id = 'spine_extension';
 document.body.append(tag);
 
-let linkList = null;
+let indexCheckList = null;
+let responseCheckList = null;
+
 
 window.addEventListener(
   'message',
   function(e) {
-    if (e.data.type === 'WRITE_LIST') {
-      linkList = e.data.message;
+    if (e.data.type === 'WRITE_INDEX_LIST') {
+      indexCheckList = e.data.message;
+      responseCheckList = e.data.message;
+      return;
+    }
+    if (e.data.type === 'CHECK_RESPONSE') {
+      checkResponseList();
       return;
     }
     if (e.data.type === 'CHECK_INDEX') {
       checkIndexList();
+      return;
     }
   },
   false,
 );
-function checkIndexList() {
-  if (!linkList) {
+
+function checkResponseList() {
+  if (!responseCheckList) {
     return;
   }
-  const link = linkList[0];
-  chrome.runtime.sendMessage({ link: link.link }, res => {
+  const { link, callbackStatusElId, callbackRobotElId, callbackTitleElId } = responseCheckList[0];
+  chrome.runtime.sendMessage({ type: 'CHECK_RESPONSE', message: {link}}, res => {
+    const {status, robot, title} = res;
+    document.getElementById(callbackStatusElId).innerText = status;
+    document.getElementById(callbackRobotElId).innerText = robot;
+    document.getElementById(callbackTitleElId).innerText = title;
+
+    responseCheckList.shift();
+    checkResponseList();
+  });
+}
+
+function checkIndexList() {
+  if (!indexCheckList) {
+    return;
+  }
+  const link = indexCheckList[0];
+  chrome.runtime.sendMessage({ type: 'CHECK_INDEX', message: {link: link.link}}, res => {
     if (res.captchaTabClose) {
-      // resume
       checkIndexList();
-      // document.getElementById(link.callbackElId).innerHTML = `<a target="_blank" href="${isIndex}">Captcha</a>`;
       return;
     }
-    document.getElementById(link.callbackElId).innerHTML = res.isIndex
+    document.getElementById(link.callbackIndexElId).innerHTML = res.isIndex
       ? '<span class="text-success">Indexed</span>'
       : '<span class="text-danger">NO</span>';
-    linkList.shift();
+    indexCheckList.shift();
     checkIndexList();
   });
 }
+
