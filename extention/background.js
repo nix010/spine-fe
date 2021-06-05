@@ -26,26 +26,28 @@ chrome.runtime.onMessage.addListener((mess, sender, sendResponse) => {
     };
     makeRequest(`https://www.google.com/search?q=${message.link}`, { onload })
   } else if (type === 'CHECK_RESPONSE'){
-    const onload = function() {
-      const {response, status} = this;
+    const {link} = message;
+
+    const onload = async function() {
+      const {response} = this;
       let parser = new window.DOMParser();
       let title = '';
       let robot = '';
       if (response){
         const html = parser.parseFromString(response, 'text/html');
-        robot = html.querySelector('meta[name="robot"]');
-        console.log(robot);
-        robot = robot ? robot.value : 'Allow';
+        robot = html.querySelector('meta[name="robots"]');
+        robot = robot ? robot.content : 'Allow';
         title = html.querySelector('title');
         title = title && title.innerText;
       }
+      const status = await getResponseStatusCode(link) || this.status;
       sendResponse({status, robot, title});
     };
     const onerror = function() {
       console.log('error::::');
       sendResponse({status: 'Error', robot: '', title: ''});
     };
-    makeRequest(message.link, { onload, onerror })
+    makeRequest(link, { onload, onerror })
   }
   return true;
 });
@@ -54,10 +56,39 @@ const makeRequest = (url, options) => {
   var xhr = new XMLHttpRequest();
   xhr.open('get', url, true);
   xhr.onload = options.onload;
-  if(options.onerror){
-    xhr.onerror = options.onerror;
-  }
+  xhr.onerror = options.onerror;
   xhr.send();
+};
+
+const getIndexAbility = async url => {
+  let hostname = new URL(url);
+  const {origin, pathname} = hostname;
+  let robotUrl = `${origin}/robots.txt`;
+  const resp = await fetch(robotUrl);
+  const respText = await resp.text();
+  const lines = respText.split(/\r?\n/)
+  const isRobot = lines.some(line => {
+    const check = line.split(': ', 2)[1];
+    return match(check, pathname);
+  });
+  return isRobot ? 'robots.txt' : null
+};
+const getResponseStatusCode = async url => {
+  // const url = 'https://qiita.com/mayiqos777';
+  try {
+    const response = await fetch(`https://prod.sureoakdata.com/api/v1/redirect-checker?initialURL=${url}`, {
+      method: "POST",
+      headers: {
+        // 'Content-Type': 'application/x-www-form-urlencoded',
+        'Referer': 'https://www.sureoak.com/',
+        'origin': 'https://www.sureoak.com',
+      }
+    });
+    const resp = await response.json();
+    return resp.redirects[0].httpStatusCode
+  } catch {
+    return null
+  }
 };
 
 
@@ -68,3 +99,24 @@ const cleanUrl = url => {
   firstUrl = firstUrl.replace(/\/+$/, ''); // trim "/"
   return firstUrl.toLowerCase();
 };
+
+function match(first, second) {
+  if (first.length == 0 && second.length == 0)
+    return true;
+
+  if (first.length > 1 && first[0] == '*' &&
+    second.length == 0)
+    return false;
+
+  if ((first.length > 1 && first[0] == '?') ||
+    (first.length != 0 && second.length != 0 &&
+      first[0] == second[0]))
+    return match(first.substring(1),
+      second.substring(1));
+
+  if (first.length > 0 && first[0] == '*')
+    return match(first.substring(1), second) ||
+      match(first, second.substring(1));
+
+  return false;
+}

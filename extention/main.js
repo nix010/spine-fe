@@ -27,12 +27,13 @@ window.addEventListener(
 );
 
 function checkResponseList() {
-  if (!responseCheckList) {
+  if (!responseCheckList.length) {
     return;
   }
   const { link, callbackStatusElId, callbackRobotElId, callbackTitleElId } = responseCheckList[0];
   chrome.runtime.sendMessage({ type: 'CHECK_RESPONSE', message: {link}}, res => {
     const {status, robot, title} = res;
+    console.log(res);
     document.getElementById(callbackStatusElId).innerText = status;
     document.getElementById(callbackRobotElId).innerText = robot;
     document.getElementById(callbackTitleElId).innerText = title;

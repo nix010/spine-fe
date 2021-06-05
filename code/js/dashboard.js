@@ -5,20 +5,21 @@ $(document).ready(function() {
     }
   }, 1000)
 });
-let x = false;
+let newLoadIndex = false;
+let newLoadResponse = false;
 $('#btn-check-response').on('click', function(e) {
-  if (newLoad) {
+  if (newLoadResponse) {
     $('.check-response').text('Loading...');
   }
   window.postMessage({ type: 'CHECK_RESPONSE' });
-  newLoad = false;
+  newLoadResponse = false;
 });
 $('#btn-check-index').on('click', function(e) {
-  if (newLoad) {
+  if (newLoadIndex) {
     $('.check-status').text('Loading...');
   }
   window.postMessage({ type: 'CHECK_INDEX' });
-  newLoad = false;
+  newLoadIndex = false;
 });
 $('#btn-load-link').on('click', function(e) {
   let linkTexts = $('#links').val().split(/\r?\n/);
@@ -41,7 +42,8 @@ $('#btn-load-link').on('click', function(e) {
     </tr>`);
     return { link, callbackIndexElId, callbackStatusElId, callbackRobotElId, callbackTitleElId };
   });
-  newLoad = true;
+  newLoadIndex = true;
+  newLoadResponse = true;
   window.postMessage({ type: 'WRITE_INDEX_LIST', message });
 })
 
