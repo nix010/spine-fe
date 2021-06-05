@@ -36,11 +36,14 @@ chrome.runtime.onMessage.addListener((mess, sender, sendResponse) => {
       if (response){
         const html = parser.parseFromString(response, 'text/html');
         robot = html.querySelector('meta[name="robots"]');
-        robot = robot ? robot.content : 'Allow';
+        robot = robot ? robot.content : null;
         title = html.querySelector('title');
         title = title && title.innerText;
       }
       const status = await getResponseStatusCode(link) || this.status;
+      if (!robot){
+        robot = await getIndexAbility(link)
+      }
       sendResponse({status, robot, title});
     };
     const onerror = function() {
@@ -61,20 +64,30 @@ const makeRequest = (url, options) => {
 };
 
 const getIndexAbility = async url => {
-  let hostname = new URL(url);
-  const {origin, pathname} = hostname;
-  let robotUrl = `${origin}/robots.txt`;
-  const resp = await fetch(robotUrl);
-  const respText = await resp.text();
-  const lines = respText.split(/\r?\n/)
-  const isRobot = lines.some(line => {
-    const check = line.split(': ', 2)[1];
-    return match(check, pathname);
-  });
-  return isRobot ? 'robots.txt' : null
+  try{
+    let hostname = new URL(url);
+    const {origin, pathname} = hostname;
+    let robotUrl = `${origin}/robots.txt`;
+    const resp = await fetch(robotUrl);
+    const respText = await resp.text();
+    const lines = respText.split(/\r?\n/)
+    const isRobot = lines.some(line => {
+      const check = line.split(': ', 2);
+
+      if (!['Disallow', 'Allow'].includes(check[0])){
+        return false
+      }
+      if (pathname.indexOf(check[1]) === 0)
+        return true;
+      return match(check[1], pathname);
+    });
+    return isRobot ? 'robots.txt' : 'Allow'
+  } catch {
+    return 'Allow'
+  }
+
 };
 const getResponseStatusCode = async url => {
-  // const url = 'https://qiita.com/mayiqos777';
   try {
     const response = await fetch(`https://prod.sureoakdata.com/api/v1/redirect-checker?initialURL=${url}`, {
       method: "POST",
