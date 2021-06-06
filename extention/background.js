@@ -1,17 +1,32 @@
 let captchaTabId = null;
+let applicationTabId = null;
+
 chrome.runtime.onMessage.addListener((mess, sender, sendResponse) => {
   const { type, message } = mess;
   if (type === 'CHECK_INDEX'){
+    chrome.tabs.query({currentWindow: true, active : true}, (tabs)=>{
+      if (!applicationTabId && tabs){
+        applicationTabId = tabs[0].id;
+      }
+    });
     const onload = function() {
       var parser = new window.DOMParser();
       if (this.status === 429) {
         chrome.tabs.create({ url: this.responseURL }, (tab) => {
           captchaTabId = tab.id;
-          chrome.tabs.onRemoved.addListener(function(tabId) {
-            if (captchaTabId === tabId){
+          var myAudio = new Audio(chrome.runtime.getURL("./noti.mp3"));
+          myAudio.play();
+          chrome.webRequest.onCompleted.addListener((e)=>{
+            const { tabId, url, type } = e;
+            if (type === 'main_frame' && url.startsWith('https://www.google.com/search?q=') && tabId === captchaTabId){
               sendResponse({captchaTabClose: true});
+              chrome.tabs.remove(tab.id, () => {
+                if (applicationTabId){
+                  chrome.tabs.update(applicationTabId, {active: true});
+                }
+              });
             }
-          });
+          }, { urls: ['*://*.google.com/*'] }, null);
         });
         return;
       }
