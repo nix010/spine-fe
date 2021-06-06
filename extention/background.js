@@ -77,7 +77,7 @@ const getIndexAbility = async url => {
       if (!['Disallow', 'Allow'].includes(check[0])){
         return false
       }
-      if (pathname.indexOf(check[1]) === 0)
+      if (check[1] !== '/' && pathname.indexOf(check[1]) === 0)
         return true;
       return match(check[1], pathname);
     });
