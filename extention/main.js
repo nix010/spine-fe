@@ -10,8 +10,8 @@ window.addEventListener(
   'message',
   function(e) {
     if (e.data.type === 'WRITE_INDEX_LIST') {
-      indexCheckList = e.data.message;
-      responseCheckList = e.data.message;
+      indexCheckList = [...e.data.message];
+      responseCheckList = [...e.data.message];
       return;
     }
     if (e.data.type === 'CHECK_RESPONSE') {
