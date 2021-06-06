@@ -89,16 +89,29 @@ const getIndexAbility = async url => {
 };
 const getResponseStatusCode = async url => {
   try {
-    const response = await fetch(`https://prod.sureoakdata.com/api/v1/redirect-checker?initialURL=${url}`, {
-      method: "POST",
-      headers: {
-        // 'Content-Type': 'application/x-www-form-urlencoded',
-        'Referer': 'https://www.sureoak.com/',
-        'origin': 'https://www.sureoak.com',
-      }
+    const response = await fetch("https://www.askapache.com/online-tools/http-headers-tool/", {
+      "headers": {
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+        "cache-control": "max-age=0",
+        "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryN42fKAYYWzNDlAfo",
+        "sec-ch-ua-mobile": "?0",
+        "sec-fetch-dest": "document",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-site": "same-origin",
+        "upgrade-insecure-requests": "1",
+      },
+      "referrer": "https://www.askapache.com/online-tools/http-headers-tool/",
+      "body": "------WebKitFormBoundaryN42fKAYYWzNDlAfo\r\nContent-Disposition: form-data; " +
+        `name=\"http_url\"\r\n\r\n${url}\r\n` +
+        "------WebKitFormBoundaryN42fKAYYWzNDlAfo\r\nContent-Disposition: form-data; name=\"http_referer\"\r\n\r\nhttps://www.askapache.com/online-tools/http-headers-tool/\r\n------WebKitFormBoundaryN42fKAYYWzNDlAfo\r\nContent-Disposition: form-data; name=\"http_request_method\"\r\n\r\nGET\r\n------WebKitFormBoundaryN42fKAYYWzNDlAfo\r\nContent-Disposition: form-data; name=\"_wp_http_referer\"\r\n\r\n/online-tools/http-headers-tool/\r\n------WebKitFormBoundaryN42fKAYYWzNDlAfo--\r\n",
+      "method": "POST",
     });
-    const resp = await response.json();
-    return resp.redirects[0].httpStatusCode
+    var parser = new window.DOMParser();
+    const htmlText = await response.text();
+    const html = parser.parseFromString(htmlText, 'text/html');
+    const resp = html.querySelector('pre').innerText;
+    const statusCodes = resp.match(/(?<= HTTP\/).*(?= )/)[0];
+    return statusCodes.split(' ', 2)[1];
   } catch {
     return null
   }
