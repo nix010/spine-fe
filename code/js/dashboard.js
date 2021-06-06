@@ -1,7 +1,7 @@
 $(document).ready(function() {
   setTimeout(()=>{
     if ($('#spine_extension').length === 0){
-      alert('Cần extension Spine để hoạt động');
+      alert('Trình duyệt của bạn chưa cài extension Sinbyte Seo. Vui lòng xem hướng dẫn để cài đặt');
     }
   }, 1000)
 });
