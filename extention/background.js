@@ -21,7 +21,7 @@ chrome.runtime.onMessage.addListener((mess, sender, sendResponse) => {
         sendResponse({isIndex: false});
         return;
       }
-      const isIndex = cleanUrl(res.href) === cleanUrl(mess.link);
+      const isIndex = cleanUrl(res.href) === cleanUrl(message.link);
       sendResponse({isIndex});
     };
     makeRequest(`https://www.google.com/search?q=${message.link}`, { onload })

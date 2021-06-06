@@ -47,13 +47,13 @@ function checkIndexList() {
   if (!indexCheckList) {
     return;
   }
-  const link = indexCheckList[0];
-  chrome.runtime.sendMessage({ type: 'CHECK_INDEX', message: {link: link.link}}, res => {
+  const {link, callbackIndexElId} = indexCheckList[0];
+  chrome.runtime.sendMessage({ type: 'CHECK_INDEX', message: {link}}, res => {
     if (res.captchaTabClose) {
       checkIndexList();
       return;
     }
-    document.getElementById(link.callbackIndexElId).innerHTML = res.isIndex
+    document.getElementById(callbackIndexElId).innerHTML = res.isIndex
       ? '<span class="text-success">Indexed</span>'
       : '<span class="text-danger">NO</span>';
     indexCheckList.shift();
