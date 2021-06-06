@@ -54,14 +54,12 @@ $('#btn-export-results').on('click', () => {
 
   $('#result-table').find('tr').each((idx, row) => {
     const rowData = [];
-    $(row).find('td').each((idx1,td) => rowData.push(td.innerText));
+    $(row).find('td').each((idx1,td) => rowData.push(`"${td.innerText}"`));
     csvData.push(rowData);
   });
-  console.log(csvData);
   if (!csvData){
     return
   }
-  console.log('print');
 
   let csvContent = "data:text/csv;charset=utf-8,"
     + csvData.map(e => e.join(",")).join("\n");
