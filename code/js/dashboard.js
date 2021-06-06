@@ -46,4 +46,33 @@ $('#btn-load-link').on('click', function(e) {
   newLoadResponse = true;
   window.postMessage({ type: 'WRITE_INDEX_LIST', message });
 })
+$('#btn-export-results').on('click', () => {
+  let csvData = [
+  ];
+  csvData.push(['"id"', '"link"', '"index"', '"response_code"',
+    '"indexing_capability"', '"title"']);
+
+  $('#result-table').find('tr').each((idx, row) => {
+    const rowData = [];
+    $(row).find('td').each((idx1,td) => rowData.push(td.innerText));
+    csvData.push(rowData);
+  });
+  console.log(csvData);
+  if (!csvData){
+    return
+  }
+  console.log('print');
+
+  let csvContent = "data:text/csv;charset=utf-8,"
+    + csvData.map(e => e.join(",")).join("\n");
+
+  var encodedUri = encodeURI(csvContent);
+  var link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "my_data.csv");
+  document.body.appendChild(link); // Required for FF
+  link.click();
+  link.remove();
+});
+
 
