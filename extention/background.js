@@ -85,18 +85,8 @@ const getIndexAbility = async url => {
     let robotUrl = `${origin}/robots.txt`;
     const resp = await fetch(robotUrl);
     const respText = await resp.text();
-    const lines = respText.split(/\r?\n/)
-    const isRobot = lines.some(line => {
-      const check = line.split(': ', 2);
-
-      if (!['Disallow', 'Allow'].includes(check[0])){
-        return false
-      }
-      if (check[1] !== '/' && pathname.indexOf(check[1]) === 0)
-        return true;
-      return match(check[1], pathname);
-    });
-    return isRobot ? 'robots.txt' : 'Allow'
+    const robotGroups = parser(respText);
+    return isRobot(url, robotGroups) ? 'robots.txt' : 'Allow'
   } catch {
     return 'Allow'
   }
@@ -161,3 +151,227 @@ function match(first, second) {
 
   return false;
 }
+
+// Robot util
+//////////////
+function applyRecords(path, records) {
+  let numApply = 0;
+  let maxSpecificity = 0;
+
+  for (let i = 0; i < records.length; i += 1) {
+    const record = records[i];
+    if (record.path.test(path)) {
+      numApply += 1;
+      if (record.specificity > maxSpecificity) {
+        maxSpecificity = record.specificity;
+      }
+    }
+  }
+
+  return {
+    numApply,
+    maxSpecificity,
+  };
+}
+
+const USER_AGENT = 'user-agent';
+const ALLOW = 'allow';
+const DISALLOW = 'disallow';
+const SITEMAP = 'sitemap';
+const CRAWL_DELAY = 'crawl-delay';
+const HOST = 'host';
+// Regex's for cleaning up the file.
+const comments = /#.*$/gm;
+const whitespace = ' ';
+const lineEndings = /[\r\n]+/g;
+const recordSlices = /(\w+-)?\w+:\s\S*/g;
+
+function cleanComments(rawString) {
+  // Replace comments and whitespace
+  return rawString
+    .replace(comments, '');
+}
+
+function cleanSpaces(rawString) {
+  return rawString.replace(whitespace, '').trim();
+}
+
+function splitOnLines(string) {
+  return string.split(lineEndings);
+}
+
+function robustSplit(string) {
+  return !string.includes('<html>') ? [...string.match(recordSlices)].map(cleanSpaces) : [];
+}
+
+function parseRecord(line) {
+  // Find first colon and assume is the field delimiter.
+  const firstColonI = line.indexOf(':');
+  return {
+    // Fields are non-case sensitive, therefore lowercase them.
+    field: line.slice(0, firstColonI).toLowerCase().trim(),
+    // Values are case sensitive (e.g. urls) and therefore leave alone.
+    value: line.slice(firstColonI + 1).trim(),
+  };
+}
+
+function parsePattern(pattern) {
+  const regexSpecialChars = /[\-\[\]\/\{\}\(\)\+\?\.\\\^\$\|]/g;
+  const wildCardPattern = /\*/g;
+  const EOLPattern = /\\\$$/;
+  const flags = 'm';
+
+  const regexString = pattern
+    .replace(regexSpecialChars, '\\$&')
+    .replace(wildCardPattern, '.*')
+    .replace(EOLPattern, '$');
+
+  return new RegExp(regexString, flags);
+}
+
+function groupMemberRecord(value) {
+  return {
+    specificity: value.length,
+    path: parsePattern(value),
+  };
+}
+
+function parser(rawString) {
+  let lines = splitOnLines(cleanSpaces(cleanComments(rawString)));
+
+  // Fallback to the record based split method if we find only one line.
+  if (lines.length === 1) {
+    lines = robustSplit(cleanComments(rawString));
+  }
+
+  const robotsObj = {
+    sitemaps: [],
+  };
+  let agent = '';
+
+  lines.forEach((line) => {
+    const record = parseRecord(line);
+    switch (record.field) {
+      case USER_AGENT:
+        const recordValue = record.value.toLowerCase();
+        if (recordValue !== agent && recordValue.length > 0) {
+          // Bot names are non-case sensitive.
+          agent = recordValue;
+          robotsObj[agent] = {
+            allow: [],
+            disallow: [],
+            crawlDelay: 0,
+          };
+        } else if (recordValue.length === 0) { // Malformed user-agent, ignore its rules.
+          agent = '';
+        }
+        break;
+      // https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt#order-of-precedence-for-group-member-records
+      case ALLOW:
+        if (agent.length > 0 && record.value.length > 0) {
+          robotsObj[agent].allow.push(groupMemberRecord(record.value));
+        }
+        break;
+      case DISALLOW:
+        if (agent.length > 0 && record.value.length > 0) {
+          robotsObj[agent].disallow.push(groupMemberRecord(record.value));
+        }
+        break;
+      // Non standard but support by google therefore included.
+      case SITEMAP:
+        if (record.value.length > 0) {
+          robotsObj.sitemaps.push(record.value);
+        }
+        break;
+      case CRAWL_DELAY:
+        if (agent.length > 0) {
+          robotsObj[agent].crawlDelay = Number.parseInt(record.value, 10);
+        }
+        break;
+      // Non standard but included for completeness.
+      case HOST:
+        if (!('host' in robotsObj)) {
+          robotsObj.host = record.value;
+        }
+        break;
+      default:
+        break;
+    }
+  });
+
+  // Return only unique sitemaps.
+  robotsObj.sitemaps = robotsObj.sitemaps.filter((val, i, s) => s.indexOf(val) === i);
+  return robotsObj;
+}
+
+function applyRecords(path, records) {
+  let numApply = 0;
+  let maxSpecificity = 0;
+
+  for (let i = 0; i < records.length; i += 1) {
+    const record = records[i];
+    if (record.path.test(path)) {
+      numApply += 1;
+      if (record.specificity > maxSpecificity) {
+        maxSpecificity = record.specificity;
+      }
+    }
+  }
+
+  return {
+    numApply,
+    maxSpecificity,
+  };
+}
+
+isRobot = (url, botGroups) => {
+  const group = Object.keys(botGroups).some(name => {
+    const group = botGroups[name];
+    return isRobotForGroup(url, group)
+  })
+  return group;
+};
+
+isRobotForGroup = (url, botGroup) => {
+  if(botGroup.length === 0){
+    return false
+  }
+  const allow = applyRecords(url, botGroup.allow);
+  if (allow.numApply > 0){
+    return true
+  }
+  const disallow = applyRecords(url, botGroup.disallow);
+  if (disallow.numApply > 0){
+    return true
+  }
+  return false
+};
+
+// const botGroup = parser(
+//   `#robots_txt_lt_english.php
+//
+// User-agent: Twitterbot
+// Disallow:
+// Allow: /work/book/*
+//
+// User-agent: 008
+// Disallow: /
+//
+// User-agent: Sosospider
+// Disallow: /
+//
+// User-agent: AccompanyBot
+// Disallow: /
+//
+// User-agent: *
+// Crawl-delay: 2
+// Disallow: /ajax_*
+// Disallow: /ajaxinc_*
+// Disallow: /api_*
+// Disallow: /api-*
+// Disallow: /api-*
+// Disallow: /api/
+// Disallow: /api/*`
+// )
+// console.log(botGroup);
+// console.log(isRobot('https://www.librarything.com/api-v1/newslivenations', botGroup));
