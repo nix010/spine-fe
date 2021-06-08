@@ -16,10 +16,15 @@ chrome.runtime.onMessage.addListener((mess, sender, sendResponse) => {
           captchaTabId = tab.id;
           var myAudio = new Audio(chrome.runtime.getURL("./noti.mp3"));
           myAudio.play();
+          chrome.tabs.onRemoved.addListener(function(tabId) {
+            if (captchaTabId === tabId){
+              sendResponse({captchaTabClose: true});
+            }
+          });
           chrome.webRequest.onCompleted.addListener((e)=>{
             const { tabId, url, type } = e;
             if (type === 'main_frame' && url.startsWith('https://www.google.com/search?q=') && tabId === captchaTabId){
-              sendResponse({captchaTabClose: true});
+              // sendResponse({captchaTabClose: true});
               chrome.tabs.remove(tab.id, () => {
                 if (applicationTabId){
                   chrome.tabs.update(applicationTabId, {active: true});
