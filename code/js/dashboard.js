@@ -54,24 +54,50 @@ $('#btn-export-results').on('click', () => {
 
   $('#result-table').find('tr').each((idx, row) => {
     const rowData = [];
-    $(row).find('td').each((idx1,td) => rowData.push(td.innerText));
+    $(row).find('td').each((idx1,td) => rowData.push(`${td.innerText}`));
     rowData[5] = (rowData[5] || '').replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '');
     csvData.push(rowData);
   });
-  if (!csvData){
-    return
-  }
-
-  let csvContent = "data:text/csv;charset=utf-8,"
-    + csvData.map(e => e.join(",")).join("\n");
-
-  var encodedUri = encodeURI(csvContent);
-  var link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "my_data.csv");
-  document.body.appendChild(link); // Required for FF
-  link.click();
-  link.remove();
+  exportToCsv('my_data.csv', csvData);
 });
 
+function exportToCsv(filename, rows) {
+  var processRow = function (row) {
+    var finalVal = '';
+    for (var j = 0; j < row.length; j++) {
+      var innerValue = row[j] === null ? '' : row[j].toString();
+      if (row[j] instanceof Date) {
+        innerValue = row[j].toLocaleString();
+      };
+      var result = innerValue.replace(/"/g, '""');
+      if (result.search(/("|,|\n)/g) >= 0)
+        result = '"' + result + '"';
+      if (j > 0)
+        finalVal += ',';
+      finalVal += result;
+    }
+    return finalVal + '\n';
+  };
 
+  var csvFile = '';
+  for (var i = 0; i < rows.length; i++) {
+    csvFile += processRow(rows[i]);
+  }
+
+  var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+  if (navigator.msSaveBlob) { // IE 10+
+    navigator.msSaveBlob(blob, filename);
+  } else {
+    var link = document.createElement("a");
+    if (link.download !== undefined) { // feature detection
+      // Browsers that support HTML5 download attribute
+      var url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+}
