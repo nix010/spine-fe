@@ -54,7 +54,7 @@ $('#btn-export-results').on('click', () => {
 
   $('#result-table').find('tr').each((idx, row) => {
     const rowData = [];
-    $(row).find('td').each((idx1,td) => rowData.push(`"${td.innerText}"`));
+    $(row).find('td').each((idx1,td) => rowData.push(escape(td.innerText)));
     csvData.push(rowData);
   });
   if (!csvData){
