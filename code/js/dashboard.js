@@ -49,8 +49,8 @@ $('#btn-load-link').on('click', function(e) {
 $('#btn-export-results').on('click', () => {
   let csvData = [
   ];
-  csvData.push(['"id"', '"link"', '"index"', '"response_code"',
-    '"indexing_capability"', '"title"']);
+  csvData.push(['id', 'link', 'index', 'response_code',
+    'indexing_capability', 'title']);
 
   $('#result-table').find('tr').each((idx, row) => {
     const rowData = [];
