@@ -54,9 +54,8 @@ $('#btn-export-results').on('click', () => {
 
   $('#result-table').find('tr').each((idx, row) => {
     const rowData = [];
-    $(row).find('td').each((idx1,td) => rowData.push(
-      td.innerText.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '')
-      ));
+    $(row).find('td').each((idx1,td) => rowData.push(td.innerText));
+    rowData[5] = rowData[5].replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '');
     csvData.push(rowData);
   });
   if (!csvData){
