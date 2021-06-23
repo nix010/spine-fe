@@ -330,26 +330,19 @@ function applyRecords(path, records) {
 }
 
 isRobot = (url, botGroups) => {
-  const group = Object.keys(botGroups).some(name => {
+  const groups = Object.keys(botGroups).some(name => {
     const group = botGroups[name];
     return isRobotForGroup(url, group)
   })
-  return group;
+  return groups;
 };
 
 isRobotForGroup = (url, botGroup) => {
-  if(botGroup.length === 0){
+  if(Array.isArray(botGroup)){
     return false
   }
-  const allow = applyRecords(url, botGroup.allow);
-  if (allow.numApply > 0){
-    return true
-  }
   const disallow = applyRecords(url, botGroup.disallow);
-  if (disallow.numApply > 0){
-    return true
-  }
-  return false
+  return disallow.numApply > 0;
 };
 
 // const botGroup = parser(
